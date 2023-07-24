@@ -1,0 +1,18 @@
+<html>
+
+<body>
+  <h1>ArsDaily</h1>
+  <p>Here are the latest articles from Ars Technica for {{ date }}:</p>
+  <ul>
+    {% for item in items %}
+    <li style="margin-bottom: 0.5em">
+      <a href="{{ item.link }}">{{ item.title }}</a>
+      &mdash;
+      {{ item.description }}
+      <a href="{{ item.pdf_link }}">(PDF)</a>
+    </li>
+    {% endfor %}
+  </ul>
+</body>
+
+</html>
