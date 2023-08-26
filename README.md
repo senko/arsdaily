@@ -37,7 +37,7 @@ Configure the environment variables:
 
 Run the script:
 
-    python src/arsdaily.py
+    python src/digest.py
 
 ## License
 
