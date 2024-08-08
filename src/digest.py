@@ -9,8 +9,6 @@ import atoma
 import jinja2
 import requests
 from dotenv import load_dotenv
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Email, HtmlContent, Mail, To
 
 logging.basicConfig(level=logging.INFO)
 
@@ -124,16 +122,13 @@ def prepare_daily_digest(items: list[atoma.rss.RSSItem]) -> str:
     )
 
 
-def send_daily_digest(content: str) -> None:
-    """
-    Send a daily digest email with the new articles using Sendgrid.
-    """
+def call_sendgrid(recipient: str, subject: str, content: str):
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Email, HtmlContent, Mail, To
 
     # Fetch the Sendgrid API key from the environment
     api_key = os.environ.get("SENDGRID_API_KEY")
-
     from_email = os.environ.get("FROM_EMAIL")
-    recipient = os.environ.get("RECIPIENT_EMAIL")
 
     # Initialize the Sendgrid client
     sg = SendGridAPIClient(api_key)
@@ -142,12 +137,79 @@ def send_daily_digest(content: str) -> None:
     message = Mail(
         Email(from_email),
         To(recipient),
-        "Ars Technica Daily Digest",
+        subject,
         HtmlContent(content),
     )
     response = sg.send(message)
     if response.status_code != 202:
         log.error(f"Failed to send email: {response.status_code}")
+
+
+def call_ses(
+    recipient: str,
+    subject: str,
+    content: str,
+):
+    """
+    Send a html-only email using Amazon SES
+
+    :param recipient: The email address of the recipient
+    :param subject: The subject of the email
+    :param body_html: The body of the email in HTML format
+    """
+
+    import boto3
+    from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+
+    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+    AWS_REGION = os.environ.get("AWS_REGION")
+    AWS_SECRET_ACCESS = os.environ.get("AWS_SECRET_ACCESS")
+    FROM_EMAIL = os.environ.get("FROM_EMAIL")
+
+    # Initialize a session using Amazon SES
+    session = boto3.Session(
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS,
+        region_name=AWS_REGION,
+    )
+
+    # Create an SES client
+    ses = session.client("ses")
+
+    # Try to send the email
+    try:
+        ses.send_email(
+            Source=FROM_EMAIL,
+            Destination={
+                "ToAddresses": [recipient],
+            },
+            Message={
+                "Subject": {"Data": subject, "Charset": "UTF-8"},
+                "Body": {
+                    "Html": {"Data": content, "Charset": "UTF-8"},
+                },
+            },
+        )
+        log.info(f"Sent '{subject}' to {recipient}")
+    except (NoCredentialsError, PartialCredentialsError) as e:
+        log.error("Error: AWS SES credentials are not available.")
+    except Exception as e:
+        log.error(f"Error sending email to {recipient}: {e}", exc_info=True)
+
+
+def send_daily_digest(content: str) -> None:
+    """
+    Send a daily digest email with the new articles using Sendgrid.
+    """
+    recipient = os.environ["RECIPIENT_EMAIL"]
+    subject = "Ars Technica Daily Digest"
+
+    if os.getenv("SENDGRID_API_KEY"):
+        call_sendgrid(recipient, subject, content)
+    elif os.getenv("AWS_ACCESS_KEY_ID"):
+        call_ses(recipient, subject, content)
+    else:
+        log.error("No email sending service configured")
 
 
 def run_daily_digest():

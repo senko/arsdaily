@@ -5,7 +5,7 @@ weekly, or at any other interval.
 
 The newsletter uses a subscriber-specific RSS feed to fetch the articles and
 creates an email with the articles in HTML format. The email is sent to the
-recipient address.
+recipient address using Sendgrid or Amazon SES.
 
 For each article, only the title, summary, link to the web and link to the
 subscriber PDF are included.
