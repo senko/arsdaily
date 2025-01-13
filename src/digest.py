@@ -86,8 +86,11 @@ def get_ars_feed() -> list[atoma.rss.RSSItem]:
     feed = atoma.parse_rss_bytes(response.content)
     for item in feed.items:
         parsed_link = urlparse(item.link)
-        article_id = parse_qs(parsed_link.query)["p"][0]
-        item.pdf_link = f"http://arstechnica.com?ARS_PDF={article_id}"
+        try:
+            article_id = parse_qs(parsed_link.query)["p"][0]
+            item.pdf_link = f"http://arstechnica.com?ARS_PDF={article_id}"
+        except (KeyError, IndexError):
+            item.pdf_link = ""
     return feed.items
 
 
@@ -191,7 +194,7 @@ def call_ses(
             },
         )
         log.info(f"Sent '{subject}' to {recipient}")
-    except (NoCredentialsError, PartialCredentialsError) as e:
+    except (NoCredentialsError, PartialCredentialsError):
         log.error("Error: AWS SES credentials are not available.")
     except Exception as e:
         log.error(f"Error sending email to {recipient}: {e}", exc_info=True)
