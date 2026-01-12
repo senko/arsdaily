@@ -14,21 +14,16 @@ ArsDaily is **NOT** affiliated with or endorsed by ArsTechnica.
 
 ## Installation
 
-ArsDaily requires Python 3.9+.
+ArsDaily requires Python 3.13+ and [uv](https://docs.astral.sh/uv/).
 
 Clone the repository:
 
     git clone git@github.com:senko/arsdaily.git
     cd arsdaily/
 
-Set up and activate a new Python virtual environment:
+Set up the virtual environment and install dependencies:
 
-    python -m venv .venv
-    source .venv/bin/activate
-
-Install the dependencies:
-
-    pip install -r requirements.txt
+    uv sync
 
 Configure the environment variables:
 
